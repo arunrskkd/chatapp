@@ -1,14 +1,20 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Styles from "./login.module.scss";
 
 export default function Login({ onenterusername }) {
-  const inpref = useRef();
+
+  const [inputtext, setinputtext] = useState(null);
+
+
 
   const handlesubmitform = (e) => {
     e.preventDefault();
-    onenterusername(inpref.current.value);
+    onenterusername(inputtext);
   };
 
+  const oninpchange = (e) => {
+    setinputtext(e.target.value)
+  }
   return (
     <div className={Styles.containerchat}>
       <div className={Styles.container}>
@@ -16,7 +22,7 @@ export default function Login({ onenterusername }) {
           <form onSubmit={handlesubmitform}>
             <h2>Enter your name</h2>
             <div className={Styles.input}>
-              <input ref={inpref} type="text" name="username" required />
+              <input  type="text" name="username" required onChange={oninpchange}/>
             </div>
             <button type="submit" className={Styles.btn}>
               Enter Chat

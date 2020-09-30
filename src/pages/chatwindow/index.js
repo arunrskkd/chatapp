@@ -1,48 +1,82 @@
-import React, { useEffect, useCallback , useState, useRef } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import Styles from "./chatwindow.module.scss";
 import Sendicon from "../../assets/icons/sendicon";
 import classnames from "classnames";
-import firebasedb from "../../config/firebaseauth";
-import firebase from "firebase";
+import Pusher from "pusher-js";
+import { axiosapi } from "../../helpers/axios";
 
-export default function Chatwindow({ user, messages }) {
-  
+export default function Chatwindow({ user }) {
+  const [inputtext, setinputtext] = useState("");
 
-
-  const setRef =  useCallback(
-    (node) => {
-
-      if(node){
-        node.scrollIntoView({ behavior: "smooth" });
-      }
-    },
-    [],
-  )
-
-  const [inputmessage, setinputmessage] = useState(null);
-
-  const [chatmessage, setchatmessage] = useState(messages);
-
-  const oninputchange = (event) => {
-    setinputmessage(event.target.value);
-  };
-
-  const sendchat = () => {
-    firebasedb.collection("messages").add({
-      username: user,
-      message: inputmessage,
-      created: firebase.firestore.Timestamp.fromDate(new Date()),
-    });
-    setinputmessage("");
-   
-  };
+  const [chatmessage, setchatmessage] = useState([]);
 
   useEffect(() => {
-    setchatmessage(messages);
+    fetchmessages();
+  }, []);
 
-  }, [messages]);
+  useEffect(() => {
+    const pusher = new Pusher("3c4a70cdbdd6a6f78fca", {
+      cluster: "ap2",
+       encrypted: true
+    });
+
+    const channel = pusher.subscribe("messagechannel");
+    channel.bind("message", (data) => {
+      setchatmessage((prev)=>{
+        return  [...prev,data]
+       })
+     
+    //  fetchmessages();
+    
+    });
+
+    return () => {
+      pusher.unsubscribe();
+      pusher.unbind_all();
+    };
+  }, []);
 
  
+
+
+
+  const fetchmessages = () => {
+    axiosapi
+      .get("messages/")
+      .then((res) => {
+        setchatmessage(res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  };
+
+  const setRef = useCallback((node) => {
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
+
+  const oninputchange = (event) => {
+    setinputtext(event.target.value);
+  };
+
+  const sendchat = (e) => {
+    e.preventDefault();
+    const data = {
+      username: user,
+      message: inputtext,
+    };
+
+    axiosapi
+      .post("messages/addmessage", data)
+      .then((res) => {
+        setinputtext("");
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  };
 
   return (
     <div className={Styles.container}>
@@ -50,42 +84,40 @@ export default function Chatwindow({ user, messages }) {
         <div className={Styles.header}>Chat</div>
         <div className={Styles.messagebox}>
           <ul>
-            {
-          
-            chatmessage ? chatmessage.map((msg, index) => 
-              
-              
-                (
-                  <li
+            {chatmessage ? (
+              chatmessage.map((msg, index) => (
+                <li
                   key={index}
-                    ref={chatmessage.length - 1 === index ? setRef  : null}
-                    className={classnames(
-                      Styles.chatlist,
-                      user === msg.username && Styles.alignleft
-                    )}
-                  >
-                    <div className={Styles.msgdata}>{ user === msg.username ?   'You' : msg.username}</div>
-                    <div className={Styles.msg}>{msg.message}</div>
-                  </li>
-                )
+                  ref={chatmessage.length - 1 === index ? setRef : null}
+                  className={classnames(
+                    Styles.chatlist,
+                    user === msg.username && Styles.alignleft
+                  )}
+                >
+                  <div className={Styles.msgdata}>
+                    {user === msg.username ? "You" : msg.username}
+                  </div>
+                  <div className={Styles.msg}>{msg.message}</div>
+                </li>
+              ))
             ) : (
               <div>Loading</div>
-            )
-            
-            }
+            )}
           </ul>
         </div>
+        <form onSubmit={sendchat}>
         <div className={Styles.inputsection}>
           <input
             type="text"
             name="chattext"
-            value={inputmessage}
+            value={inputtext}
             onChange={oninputchange}
           />
-          <div className={Styles.senticon} onClick={sendchat}>
+          <button className={Styles.senticon} >
             <Sendicon />
-          </div>
+          </button>
         </div>
+        </form>
       </div>
     </div>
   );
