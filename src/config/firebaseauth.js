@@ -1,7 +1,7 @@
 import React from 'react';
 import firebase from 'firebase';
 
-//firbase config
+//firbase config for dbs
 const firebaseConfig = {
     apiKey: "",
     authDomain: "",
