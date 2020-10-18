@@ -1,6 +1,6 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-this is a demo chat
-## Available Scripts
+this is a demo chats
+## Available Scriptss
 
 In the project directory, you can run:
 
